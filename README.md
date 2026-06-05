@@ -105,5 +105,3 @@ Sistem ini dilengkapi dengan *script* pengujian beban (`locustfile.py`) yang aka
 3. **Mulai Pengujian:**
    Buka browser dan akses **`http://localhost:8089`**. Masukkan jumlah target *users* dan *spawn rate*, lalu arahkan host ke `http://localhost:5000`.
 
----
-*Dibuat untuk keperluan simulasi Sistem Terdistribusi (Distributed Systems).*
