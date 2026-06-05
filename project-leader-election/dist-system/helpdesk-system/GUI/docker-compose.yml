@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  helpdesk-gui:
+    build:
+      context: .
+      dockerfile: dockerfile
+    ports:
+      - "5050:5050"
+    environment:
+      - API_BASE_URL=http://host.docker.internal:5000
+      - GUI_PORT=5050
+      - FLASK_ENV=production
+    depends_on:
+      - ticket-service
+    networks:
+      - helpdesk-network
+    restart: unless-stopped
+
+networks:
+  helpdesk-network:
+    driver: bridge

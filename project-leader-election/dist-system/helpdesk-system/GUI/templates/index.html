@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Helpdesk System - Dashboard</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/style.css') }}"
+    />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <i class="fas fa-headset"></i>
+          <span>Helpdesk System</span>
+        </div>
+        <button class="sidebar-toggle" id="sidebarToggle">
+          <i class="fas fa-bars"></i>
+        </button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="nav-item active" data-view="dashboard">
+          <i class="fas fa-chart-line"></i>
+          <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item" data-view="tickets">
+          <i class="fas fa-ticket-alt"></i>
+          <span>Tickets</span>
+        </a>
+        <a href="#" class="nav-item" data-view="analytics">
+          <i class="fas fa-bar-chart"></i>
+          <span>Analytics</span>
+        </a>
+      </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Bar -->
+      <header class="top-bar">
+        <div class="top-bar-left">
+          <h1 id="pageTitle">Dashboard</h1>
+        </div>
+        <div class="top-bar-right">
+          <div class="search-box">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search tickets..."
+              class="search-input"
+            />
+            <i class="fas fa-search"></i>
+          </div>
+          <button class="btn-primary btn-icon" title="Refresh">
+            <i class="fas fa-sync-alt"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="content">
+        <!-- Dashboard View -->
+        <section id="dashboardView" class="view active">
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-icon open">
+                <i class="fas fa-folder-open"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Open Tickets</h3>
+                <p class="stat-number" id="openTicketsCount">0</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon resolved">
+                <i class="fas fa-check-circle"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Resolved</h3>
+                <p class="stat-number" id="resolvedTicketsCount">0</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon total">
+                <i class="fas fa-inbox"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Total Tickets</h3>
+                <p class="stat-number" id="totalTicketsCount">0</p>
+              </div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-icon failed">
+                <i class="fas fa-exclamation-circle"></i>
+              </div>
+              <div class="stat-content">
+                <h3>Failed</h3>
+                <p class="stat-number" id="failedTicketsCount">0</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card cluster-card">
+            <div class="card-header">
+              <h2><i class="fas fa-network-wired"></i> Status Kluster</h2>
+              <span class="cluster-updated" id="clusterUpdatedAt"
+                >Memuat...</span
+              >
+            </div>
+            <div class="card-body">
+              <div class="cluster-summary">
+                <div class="leader-banner" id="leaderBanner">
+                  <div class="leader-icon"><i class="fas fa-crown"></i></div>
+                  <div class="leader-info">
+                    <span class="leader-label">Leader Aktif</span>
+                    <span class="leader-name" id="activeLeaderName">—</span>
+                  </div>
+                  <span class="election-badge hidden" id="electionBadge">
+                    <i class="fas fa-vote-yea"></i> Pemilu berlangsung
+                  </span>
+                </div>
+                <div class="workers-active-box" id="activeWorkersBox">
+                  <span class="workers-label"
+                    ><i class="fas fa-cogs"></i> Worker aktif (RabbitMQ)</span
+                  >
+                  <div class="workers-chips" id="activeWorkersList">
+                    <span class="chip chip-muted">Belum ada aktivitas</span>
+                  </div>
+                </div>
+              </div>
+              <div id="clusterNodesList" class="cluster-nodes">
+                <div class="loading">
+                  <i class="fas fa-spinner fa-spin"></i> Memuat status node...
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dashboard-grid">
+            <div class="card">
+              <div class="card-header">
+                <h2>Recent Tickets</h2>
+                <button class="btn-outline btn-sm" id="createTicketBtn">
+                  <i class="fas fa-plus"></i> New Ticket
+                </button>
+              </div>
+              <div class="card-body">
+                <div id="recentTicketsList" class="tickets-list">
+                  <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading...
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tickets View -->
+        <section id="ticketsView" class="view">
+          <div class="card">
+            <div class="card-header">
+              <h2>All Tickets</h2>
+              <button class="btn-primary" id="createTicketBtn2">
+                <i class="fas fa-plus"></i> Create Ticket
+              </button>
+            </div>
+            <div class="card-body">
+              <div class="filters">
+                <select id="statusFilter" class="filter-select">
+                  <option value="">All Status</option>
+                  <option value="OPEN">Open</option>
+                  <option value="RESOLVED">Resolved</option>
+                  <option value="FAILED_TO_RESOLVE">Failed</option>
+                </select>
+                <input
+                  type="text"
+                  id="customerFilter"
+                  class="filter-input"
+                  placeholder="Filter by customer..."
+                />
+              </div>
+              <div id="allTicketsList" class="tickets-table">
+                <div class="loading">
+                  <i class="fas fa-spinner fa-spin"></i> Loading tickets...
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Analytics View -->
+        <section id="analyticsView" class="view">
+          <div class="card">
+            <div class="card-header">
+              <h2>System Analytics</h2>
+            </div>
+            <div class="card-body">
+              <div class="analytics-grid">
+                <div class="analytics-item">
+                  <h3>Status Distribution</h3>
+                  <canvas id="statusChart"></canvas>
+                </div>
+                <div class="analytics-item">
+                  <h3>Ticket Timeline</h3>
+                  <div id="timelineChart" class="timeline-chart">
+                    <p class="text-center">Analytics data will appear here</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- Modal: Create/Edit Ticket -->
+    <div class="modal" id="ticketModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="modalTitle">Create New Ticket</h2>
+          <button class="modal-close" data-modal="ticketModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <form id="ticketForm" class="form">
+          <input type="hidden" id="ticketId" name="ticketId" />
+
+          <div class="form-group">
+            <label for="customerName">Customer Name *</label>
+            <input
+              type="text"
+              id="customerName"
+              name="customerName"
+              placeholder="Enter customer name"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="issueTitle">Issue Title *</label>
+            <input
+              type="text"
+              id="issueTitle"
+              name="issueTitle"
+              placeholder="Enter issue title"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="description">Description</label>
+            <textarea
+              id="description"
+              name="description"
+              placeholder="Describe the issue..."
+              rows="4"
+            ></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-outline" data-modal="ticketModal">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary">Save Ticket</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: Resolve Ticket -->
+    <div class="modal" id="resolveModal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>Resolve Ticket</h2>
+          <button class="modal-close" data-modal="resolveModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <form id="resolveForm" class="form">
+          <input type="hidden" id="resolveTicketId" name="ticketId" />
+
+          <div class="form-group">
+            <label for="resolution">Resolution *</label>
+            <textarea
+              id="resolution"
+              name="resolution"
+              placeholder="Enter resolution details..."
+              rows="4"
+              required
+            ></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn-outline" data-modal="resolveModal">
+              Cancel
+            </button>
+            <button type="submit" class="btn-primary">
+              <i class="fas fa-check"></i> Mark as Resolved
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Modal: View Ticket Details -->
+    <div class="modal" id="detailsModal">
+      <div class="modal-content modal-large">
+        <div class="modal-header">
+          <h2>Ticket Details</h2>
+          <button class="modal-close" data-modal="detailsModal">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+        <div id="ticketDetails" class="ticket-details">
+          <!-- Filled by JavaScript -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  </body>
+</html>

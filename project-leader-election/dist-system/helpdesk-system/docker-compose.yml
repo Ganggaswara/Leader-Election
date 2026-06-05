@@ -1,0 +1,218 @@
+version: '3.8'
+
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: helpdesk-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - helpdesk-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:15
+    container_name: helpdesk-postgres
+    environment:
+      POSTGRES_DB: helpdesk
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - helpdesk-network        # ← Fix: masuk ke network yang sama
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d helpdesk"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  load-balancer:
+    build: .
+    container_name: helpdesk-lb
+    command: gunicorn -w 4 -b 0.0.0.0:5000 --timeout 120 load_balancer:app
+    ports:
+      - "5000:5000"
+    environment:
+      - TICKET_SERVICES=http://ticket-1:8000,http://ticket-2:8000,http://ticket-3:8000,http://ticket-4:8000
+    depends_on:
+      - ticket-1
+      - ticket-2
+    networks:
+      - helpdesk-network
+
+  ticket-1:
+    build: .
+    container_name: ticket-1
+    command: gunicorn -w 4 -b 0.0.0.0:8000 --timeout 120 ticket_service:app
+    environment:
+      - BACKEND_NODES=http://notification-1:9000,http://notification-2:9000,http://notification-3:9000,http://notification-4:9000,http://notification-5:9000,http://notification-6:9000
+      - DB_HOST=postgres        # ← Tambah env untuk postgres
+      - DB_NAME=helpdesk
+      - DB_USER=admin
+      - DB_PASSWORD=admin123
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy  # ← Tunggu postgres siap
+    networks:
+      - helpdesk-network
+
+  ticket-2:
+    build: .
+    container_name: ticket-2
+    command: gunicorn -w 4 -b 0.0.0.0:8000 --timeout 120 ticket_service:app
+    environment:
+      - BACKEND_NODES=http://notification-1:9000,http://notification-2:9000,http://notification-3:9000,http://notification-4:9000,http://notification-5:9000,http://notification-6:9000
+      - DB_HOST=postgres        # ← Sama
+      - DB_NAME=helpdesk
+      - DB_USER=admin
+      - DB_PASSWORD=admin123
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  ticket-3:
+    build: .
+    container_name: ticket-3
+    command: gunicorn -w 4 -b 0.0.0.0:8000 --timeout 120 ticket_service:app
+    environment:
+      - BACKEND_NODES=http://notification-1:9000,http://notification-2:9000,http://notification-3:9000,http://notification-4:9000,http://notification-5:9000,http://notification-6:9000
+      - DB_HOST=postgres
+      - DB_NAME=helpdesk
+      - DB_USER=admin
+      - DB_PASSWORD=admin123
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  ticket-4:
+    build: .
+    container_name: ticket-4
+    command: gunicorn -w 4 -b 0.0.0.0:8000 --timeout 120 ticket_service:app
+    environment:
+      - BACKEND_NODES=http://notification-1:9000,http://notification-2:9000,http://notification-3:9000,http://notification-4:9000,http://notification-5:9000,http://notification-6:9000
+      - DB_HOST=postgres
+      - DB_NAME=helpdesk
+      - DB_USER=admin
+      - DB_PASSWORD=admin123
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  notification-1:
+    build: .
+    container_name: notification-1
+    command: python notification_service.py
+    environment:
+    - NODE_NAME=notification-1
+    - NODE_ID=1
+    - ALL_NODES=notification-1:1,notification-2:2,notification-3:3,notification-4:4,notification-5:5,notification-6:6
+    - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  notification-2:
+    build: .
+    container_name: notification-2
+    command: python notification_service.py
+    environment:
+      - NODE_NAME=notification-2
+      - NODE_ID=2
+      - ALL_NODES=notification-1:1,notification-2:2,notification-3:3,notification-4:4,notification-5:5,notification-6:6
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  notification-3:
+    build: .
+    container_name: notification-3
+    command: python notification_service.py
+    environment:
+      - NODE_NAME=notification-3
+      - NODE_ID=3
+      - ALL_NODES=notification-1:1,notification-2:2,notification-3:3,notification-4:4,notification-5:5,notification-6:6
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  notification-4:
+    build: .
+    container_name: notification-4
+    command: python notification_service.py
+    environment:
+      - NODE_NAME=notification-4
+      - NODE_ID=4
+      - ALL_NODES=notification-1:1,notification-2:2,notification-3:3,notification-4:4,notification-5:5,notification-6:6
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  notification-5:
+    build: .
+    container_name: notification-5
+    command: python notification_service.py
+    environment:
+      - NODE_NAME=notification-5
+      - NODE_ID=5
+      - ALL_NODES=notification-1:1,notification-2:2,notification-3:3,notification-4:4,notification-5:5,notification-6:6
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+
+  notification-6:
+    build: .
+    container_name: notification-6
+    command: python notification_service.py
+    environment:
+      - NODE_NAME=notification-6
+      - NODE_ID=6
+      - ALL_NODES=notification-1:1,notification-2:2,notification-3:3,notification-4:4,notification-5:5,notification-6:6
+      - RABBITMQ_HOST=rabbitmq
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    networks:
+      - helpdesk-network
+# ← Fix: root level, bukan di dalam services
+volumes:
+  pgdata:
+
+networks:
+  helpdesk-network:
+    driver: bridge

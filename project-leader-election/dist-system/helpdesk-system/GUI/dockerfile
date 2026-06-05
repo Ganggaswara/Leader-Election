@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application
+COPY . .
+
+# Create directories if not exist
+RUN mkdir -p static/css static/js templates
+
+# Expose port
+EXPOSE 5050
+
+# Run application
+CMD ["python", "app.py"]
